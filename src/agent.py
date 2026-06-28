@@ -14,7 +14,13 @@ from src.config import Config
 from src.skill_loader import discover_skills, load_skill_body
 from src.mcp_official_client import MCPOfficialClient
 #from src.voice_input import listen_for_command  # 直接导入函数
-from src.voice_service import listen_for_command
+try:
+    from src.voice_service import listen_for_command
+except (ImportError, OSError):
+    # 在无音频设备的服务器上，禁用语音输入
+    def listen_for_command(timeout=5):
+        return ""
+    print("⚠️ 语音输入不可用（缺少音频设备或依赖），已禁用")
 
 
 # ---------- 全局 MCP 客户端（单例） ----------
