@@ -7,6 +7,10 @@ import tempfile
 import os
 from langchain_core.messages import HumanMessage
 from src.skill_loader import discover_skills
+import platform
+
+if platform.system() != 'Darwin':
+    st.info("ℹ️ 当前运行在云端演示环境，部分 macOS 本地操作（如打开微信、调节音量）将无法执行。但你可以体验对话和天气查询功能。")
 
 # 页面配置
 st.set_page_config(page_title="MacAgent 智能助手", layout="wide")

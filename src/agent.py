@@ -53,11 +53,18 @@ llm = ChatZhipuAI(
 def _run_morning_routine(mcp_client, contact: str = Config.MORNING_CONTACT, city: str = Config.MORNING_CITY) -> str:
     results = []
     try:
-        success = asyncio.run(mcp_client.launch_app("WeChat"))
-        results.append(f"微信启动: {'✅ 成功' if success else '❌ 失败'}")
-        if not success:
-            return "早晨启动中断：微信启动失败"
+        # 1. 打开微信（捕获失败）
+        try:
+            success = asyncio.run(mcp_client.launch_app("WeChat"))
+            results.append(f"微信启动: {'✅ 成功' if success else '❌ 失败'}")
+            if not success:
+                # 如果打开失败，提示用户当前环境不支持，但继续执行后续步骤？
+                # 或者直接返回提示，让用户知道这是云环境限制
+                return "⚠️ 当前部署环境为云端演示版，无法控制本地 macOS 应用。\n如需完整体验，请在 macOS 本地运行。"
+        except Exception as e:
+            return f"⚠️ 云端环境无法启动本地应用（{e}）。如需完整体验，请在 macOS 本地运行。"
 
+        # 2. 查询天气（可以继续，因为天气 API 是联网的）
         weather_info = "未知"
         try:
             resp = requests.get(f"https://wttr.in/{city}?format=%C+%t", timeout=5)
@@ -68,18 +75,28 @@ def _run_morning_routine(mcp_client, contact: str = Config.MORNING_CONTACT, city
         except Exception as e:
             weather_info = f"天气查询失败: {str(e)}"
 
+        # 3. 生成消息（即使微信没打开，也可以显示天气信息）
         if "sun" in weather_info.lower() or "晴" in weather_info:
             msg = f"早上好！今天天气不错（{weather_info}），建议出门走走。"
         else:
             msg = f"早上好！今天天气一般（{weather_info}），注意穿衣保暖。"
 
-        success = asyncio.run(mcp_client.send_wechat_message(contact, msg))
-        results.append(f"发送消息给 {contact}: {'✅ 成功' if success else '❌ 失败'}")
+        # 4. 尝试发送微信消息（也会失败，但我们可以提示）
+        try:
+            success = asyncio.run(mcp_client.send_wechat_message(contact, msg))
+            results.append(f"发送消息给 {contact}: {'✅ 成功' if success else '❌ 失败'}")
+        except Exception as e:
+            results.append(f"发送消息给 {contact}: ❌ 失败（云端环境无法发送微信）")
 
-        success = asyncio.run(mcp_client.set_volume(30))
-        results.append(f"音量调节至30%: {'✅ 成功' if success else '❌ 失败'}")
+        # 5. 调节音量（同样失败，但提示）
+        try:
+            success = asyncio.run(mcp_client.set_volume(30))
+            results.append(f"音量调节至30%: {'✅ 成功' if success else '❌ 失败'}")
+        except Exception as e:
+            results.append(f"音量调节至30%: ❌ 失败（云端环境无法调节音量）")
 
-        return "\n".join(results)
+        # 最后返回汇总信息，包括天气信息，让用户知道流程走完了
+        return f"🌅 早上好！\n{msg}\n\n执行摘要：\n" + "\n".join(results)
     except Exception as e:
         return f"❌ 早晨启动流程异常: {str(e)}"
 
