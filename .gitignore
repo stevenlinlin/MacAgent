@@ -1,0 +1,16 @@
+# 检查 .gitignore 是否包含以下内容
+venv/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+data/
+chroma_db/
+rag_chroma_db/
+
+# 忽略 Vosk 模型文件
+vosk-model-*/
+vosk-model-*.zip
+*.zipvosk-model-*
+vosk-model-*.zip
+*.zip
